@@ -714,7 +714,7 @@ dialog{background:var(--glass-strong);-webkit-backdrop-filter:blur(30px) saturat
 <div class="view" data-view="asistente" id="view-asistente" hidden>
   <div class="container" style="max-width:900px">
     <div class="view-head"><div><p class="eyebrow">Inteligencia artificial aplicada</p><h1 class="h-lg">BioVolt Assistant</h1><p class="lead">Un punto de consulta para conocer los procesos y la información general de BioVolt.</p></div></div>
-    <div class="notice"><span data-icon="info" data-size="18"></span><span>Asistente conectado a Gemini. Puede ayudarte a comprender los procesos y la información de BioVolt. Los datos mostrados son de demostración.</span></div>
+    <div class="notice"><span data-icon="info" data-size="18"></span><span>Modo demostración: responde con una base de conocimiento local. Para usar IA generativa real, conecta una API en la función <b>getAIResponse()</b>.</span></div>
     <section class="card chat" aria-label="Chat con BioVolt Assistant">
       <div class="chat-head">
         <div class="chat-id"><span class="ico-circle" data-icon="sparkles"></span><div><h2 class="panel-title" style="font-size:17px">Asistente BioVolt</h2><p class="small muted">Disponible en demostración</p></div></div>
@@ -1308,14 +1308,14 @@ function localAnswer(msg){
    la clave de API dentro de este archivo.
    --------------------------------------------------------------------- */
 async function getAIResponse(userMessage, history){
-  const res = await fetch('/.netlify/functions/chat', {
+  const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: userMessage, history: history.slice(-12) })
+    body: JSON.stringify({ message: userMessage, history })
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'No se pudo contactar al asistente.');
-  if (!data.reply) throw new Error('El asistente no devolvió una respuesta.');
+  if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+  if (!data.reply) throw new Error('La función no devolvió una respuesta.');
   return data.reply;
 }
 
