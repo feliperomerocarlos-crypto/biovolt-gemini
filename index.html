@@ -1308,54 +1308,21 @@ function localAnswer(msg){
    la clave de API dentro de este archivo.
    --------------------------------------------------------------------- */
 async function getAIResponse(userMessage, history){
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: userMessage, history })
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
-  if (!data.reply) throw new Error('La función no devolvió una respuesta.');
-  return data.reply;
-}
-
-const chatLog = $('#chatLog');
-const scrollChat = () => chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: reduceMotion() ? 'auto' : 'smooth' });
-function addMsg(role, text, isError){
-  $('#chatEmpty').hidden = true;
-  const row = document.createElement('div'); row.className = 'msg-row ' + role + (isError ? ' error' : '');
-  const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
-  const m = document.createElement('div'); m.className = 'msg-time small muted';
-  m.textContent = (role === 'user' ? 'Tú' : 'BioVolt Assistant') + ' · ' + new Date().toLocaleTimeString('es-CO', { hour:'numeric', minute:'2-digit' });
-  row.append(b, m); chatLog.append(row); scrollChat();
-}
-function showTyping(){
-  const row = document.createElement('div'); row.className = 'msg-row assistant'; row.id = 'typingRow';
-  row.innerHTML = '<div class="bubble typing" aria-hidden="true"><i></i><i></i><i></i></div><span class="sr-only">BioVolt Assistant está escribiendo…</span>';
-  chatLog.append(row); scrollChat();
-}
-const hideTyping = () => { const t = $('#typingRow'); if (t) t.remove(); };
-async function sendMessage(text){
-  text = text.trim(); if (!text || chatBusy) return;
-  chatBusy = true; $('#chatSend').disabled = true; chatLog.setAttribute('aria-busy', 'true');
-  $('#chatInput').value = '';
-  addMsg('user', text); history.push({ role:'user', content:text }); showTyping();
   try {
-    const answer = await getAIResponse(text, history);
-    hideTyping(); addMsg('assistant', answer); history.push({ role:'assistant', content:answer });
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userMessage, history })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    if (!data.reply) throw new Error('La función no devolvió una respuesta.');
+    return data.reply;
   } catch (err) {
-    hideTyping(); addMsg('assistant', 'No pude responder en este momento. Inténtalo de nuevo en unos segundos.', true);
-  } finally {
-    chatBusy = false; $('#chatSend').disabled = false; chatLog.removeAttribute('aria-busy'); $('#chatInput').focus();
+    console.error('IA no disponible, usando base local:', err);
+    return localAnswer(userMessage);
   }
 }
-$('#chatForm').addEventListener('submit', e => { e.preventDefault(); sendMessage($('#chatInput').value); });   // Enter envía el formulario
-const SUGGESTIONS = ['¿Qué tipos de biomasa maneja BioVolt?', '¿Cuántas plantas tiene BioVolt?', '¿Qué plantas están en mantenimiento?', '¿Qué información hay en el inventario?', '¿Qué puedo hacer en la mesa de ayuda?', '¿Cuál es el impacto ambiental?'];
-$('#chatChips').innerHTML = SUGGESTIONS.map(s => `<button class="chip" type="button">${esc(s)}</button>`).join('');
-$('#chatChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) sendMessage(b.textContent); });
-$('#clearChat').addEventListener('click', () => {
-  $$('.msg-row', chatLog).forEach(n => n.remove()); history.length = 0; $('#chatEmpty').hidden = false; $('#chatInput').focus(); toast('Conversación reiniciada');
-});
 
 /* =====================================================================
    H. INICIO
